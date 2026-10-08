@@ -1,0 +1,16 @@
+cat > .gitignore << 'EOF'
+build/
+build-*/
+.qtcreator/
+debug/
+release/
+*.user
+*.o
+*.obj
+*.exe
+moc_*
+ui_*.h
+qrc_*
+Makefile*
+.qmake.stash
+EOF

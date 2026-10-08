@@ -1,0 +1,122 @@
+@startuml LazinessCalc
+' Диаграмма классов — «Калькулятор лени», вариант 21.
+' Каркас MVC с активной моделью. Qt 6, C++17.
+'
+' Готовая картинка лежит рядом: class-diagram.svg / class-diagram.png.
+' Этот файл нужен, если диаграмму потребуется переделать.
+
+skinparam dpi 150
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor White
+  BorderColor #64748B
+  ArrowColor #334155
+}
+hide empty members
+
+title Калькулятор лени (вариант 21) — MVC с активной моделью
+
+package "View — представление" #F2F7FD {
+
+  class MainWindow <<view>> {
+    - ui : Ui::MainWindow*
+    - m_model : LazinessModel*
+    - m_controller : LazinessController*
+    --
+    + MainWindow(model : LazinessModel*, controller : LazinessController*, parent : QWidget* = nullptr)
+    + ~MainWindow()
+    - <<slot>> onInputClicked() : void
+    - <<slot>> refresh() : void
+    - showEmptyState() : void
+    - showResult() : void
+  }
+
+  class InputDialog <<view>> {
+    - ui : Ui::InputDialog*
+    --
+    + InputDialog(parent : QWidget* = nullptr)
+    + ~InputDialog()
+    + setValues(planned : QString, done : QString) : void
+    + plannedText() : QString {query}
+    + doneText() : QString {query}
+  }
+}
+
+package "Controller — контроллер" #FFF9F0 {
+
+  class LazinessController <<controller>> {
+    - m_model : LazinessModel*
+    --
+    + LazinessController(model : LazinessModel*, parent : QObject* = nullptr)
+    + submit(plannedText : QString, doneText : QString, errorMessage : QString*) : bool
+  }
+}
+
+package "Model — модель" #F2FBF3 {
+
+  class LazinessModel <<model>> {
+    + {static} kMinPlanned : int = 1
+    + {static} kMinDone : int = 0
+    + {static} kMaxTasks : int = 1000
+    - m_planned : int = 0
+    - m_done : int = 0
+    - m_coefficient : double = 0.0
+    - m_level : QString
+    - m_phrase : QString
+    - m_hasData : bool = false
+    --
+    + LazinessModel(parent : QObject* = nullptr)
+    + setData(planned : int, done : int) : bool
+    + clear() : void
+    + {static} isValid(planned : int, done : int) : bool
+    + planned() : int {query}
+    + done() : int {query}
+    + coefficient() : double {query}
+    + level() : QString {query}
+    + phrase() : QString {query}
+    + hasData() : bool {query}
+    + <<signal>> dataChanged() : void
+    - recalculate() : void
+  }
+
+  class Grade <<struct>> {
+    + upperBound : double
+    + level : const char*
+    + phrase : const char*
+  }
+}
+
+' --- классы Qt ---
+class QObject <<Qt>>
+class QMainWindow <<Qt>>
+class QDialog <<Qt>>
+
+QObject     <|-- LazinessModel
+QObject     <|-- LazinessController
+QMainWindow <|-- MainWindow
+QDialog     <|-- InputDialog
+
+' --- связи внутри MVC ---
+MainWindow "1" --> "1" LazinessController : <<uses>>
+MainWindow "1" --> "1" LazinessModel      : <<uses>> читает данные
+LazinessController "1" --> "1" LazinessModel : <<uses>>
+MainWindow ..> InputDialog : <<create>>
+LazinessModel ..> Grade : <<uses>> шкала уровней
+
+' --- активная модель: уведомление идёт от модели к View ---
+LazinessModel ..> MainWindow : <<signal>> dataChanged() -> refresh()
+
+note as N1
+  <b>main.cpp — точка сборки (composition root)</b>
+  LazinessModel      model;
+  LazinessController controller(&model);
+  MainWindow         window(&model, &controller);
+
+  Ни один слой не создаёт другой: связи задаются снаружи.
+  Модель не включает ни одного заголовка виджета
+  и о существовании View не знает.
+end note
+
+@enduml
