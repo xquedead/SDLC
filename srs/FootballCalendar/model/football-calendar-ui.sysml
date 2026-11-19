@@ -4,6 +4,7 @@
 
 package FootballCalendar {
     private import ScalarValues::*;
+    private import StandardViewDefinitions::*;
 
     // ------------------------------------------------------------------
     // 1. Контекст и варианты использования
@@ -45,11 +46,13 @@ package FootballCalendar {
         use case def 'Просмотр турнирной таблицы и бомбардиров' {
             subject app : FootballCalendarApp;
             actor user : Fan;
+            actor blogger : Blogger;
             actor api : FootballDataApi;
         }
         use case def 'Просмотр статистики команды' {
             subject app : FootballCalendarApp;
-            actor user : Blogger;
+            actor fan : Fan;
+            actor blogger : Blogger;
             actor api : FootballDataApi;
         }
         use case def 'Ведение избранных команд' {
@@ -107,24 +110,28 @@ package FootballCalendar {
             part navigation : TabBar {
                 :>> tabs = ("Календарь", "Таблицы", "Команды", "Мой календарь");
             }
+
             part toolbar : Panel {
                 part btnPrev : Button { :>> caption = "<"; }
-                part lblPeriod : Label { :>> caption = "27 окт – 2 ноя 2026"; }
+                part lblPeriod : Label { :>> caption = "Текущий период"; }
                 part btnNext : Button { :>> caption = ">"; }
                 part btnToday : Button { :>> caption = "Сегодня"; }
                 part cbPeriod : ComboBox { :>> items = ("День", "Неделя", "Месяц"); }
                 part btnRefresh : Button { :>> caption = "Обновить"; }
             }
+
             part filterPanel : Panel {
                 part competitions : ListView { :>> caption = "Турниры"; }
                 part teamSearch : TextField { :>> caption = "Поиск команды"; }
                 part onlyFavorites : CheckBox { :>> caption = "Только избранные"; }
             }
+
             part matchList : Table {
                 :>> columns = ("Дата", "Время", "Турнир", "Хозяева", "Счёт", "Гости", "Статус");
             }
+
             part statusBar : StatusBar {
-                :>> caption = "Данные обновлены 30.10.2026 18:05 · football-data.org";
+                :>> caption = "Обновлено: <время> · Football data provided by the Football-Data.org API";
             }
         }
 
@@ -136,10 +143,12 @@ package FootballCalendar {
                 part homeTeam : Label;
                 part score : Label;
                 part awayTeam : Label;
-                part matchInfo : Label { :>> caption = "Дата, стадион, судья, тур"; }
+                part matchInfo : Label { :>> caption = "Турнир, тур, дата, время, стадион, судья"; }
             }
+
             part goals : Table { :>> columns = ("Мин.", "Команда", "Автор гола"); }
             part headToHead : Table { :>> columns = ("Дата", "Матч", "Счёт"); }
+
             part actions : Panel {
                 part btnRemind : Button { :>> caption = "Напомнить"; }
                 part cbRemindBefore : ComboBox { :>> items = ("15 мин", "30 мин", "60 мин"); }
@@ -151,8 +160,11 @@ package FootballCalendar {
         part standingsScreen : Window {
             :>> caption = "Таблицы";
 
-            part cbCompetition : ComboBox { :>> caption = "Турнир"; }
-            part cbSeason : ComboBox { :>> caption = "Сезон"; }
+            part toolbar : Panel {
+                part cbCompetition : ComboBox { :>> caption = "Турнир"; }
+                part cbSeason : ComboBox { :>> caption = "Сезон"; }
+            }
+
             part standings : Table {
                 :>> columns = ("№", "Команда", "И", "В", "Н", "П", "Мячи", "О", "Форма");
             }
@@ -163,13 +175,45 @@ package FootballCalendar {
         part myCalendarScreen : Window {
             :>> caption = "Мой календарь";
 
-            part favorites : ListView { :>> caption = "Избранные команды"; }
-            part btnAddTeam : Button { :>> caption = "Добавить команду"; }
-            part upcoming : Table { :>> columns = ("Дата", "Время", "Матч", "Напоминание"); }
-            part conflictBanner : Label {
-                :>> caption = "Пересечение по времени: 2 матча избранных команд";
+            part favoritesPanel : Panel {
+                part favorites : ListView { :>> caption = "Избранные команды"; }
+                part btnAddTeam : Button { :>> caption = "Добавить команду"; }
             }
-            part btnExportIcs : Button { :>> caption = "Экспорт в .ics"; }
+
+            part upcomingPanel : Panel {
+                part conflictBanner : Label {
+                    :>> caption = "Предупреждение о пересечении матчей по времени";
+                }
+                part upcoming : Table { :>> columns = ("Дата", "Время", "Матч", "Напоминание"); }
+                part btnExportIcs : Button { :>> caption = "Экспорт в .ics"; }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 4. Представления модели (Views)
+    // ------------------------------------------------------------------
+    package Views {
+        view def UseCaseView :> GeneralView;
+
+        view 'Варианты использования' : UseCaseView {
+            expose UseCases::*;
+        }
+
+        view 'UI-01 Главное окно' : InterconnectionView {
+            expose Screens::mainWindow::**;
+        }
+
+        view 'UI-02 Карточка матча' : InterconnectionView {
+            expose Screens::matchCard::**;
+        }
+
+        view 'UI-03 Турнирная таблица и бомбардиры' : InterconnectionView {
+            expose Screens::standingsScreen::**;
+        }
+
+        view 'UI-04 Мой календарь' : InterconnectionView {
+            expose Screens::myCalendarScreen::**;
         }
     }
 }
